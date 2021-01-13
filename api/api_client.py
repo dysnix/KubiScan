@@ -53,7 +53,7 @@ def api_init(host=None, token_filename=None, cert_filename=None, context=None):
         token_filename = os.path.abspath(token_filename)
         if cert_filename:
             cert_filename = os.path.abspath(cert_filename)
-        BearerTokenLoader(host=host, token_filename=token_filename, cert_filename=cert_filename).load_and_set()
+        api_temp = ApiClientTemp(BearerTokenLoader(host=host, token_filename=token_filename, cert_filename=cert_filename).load_and_set())
 
     else:
         if running_in_docker_container():
@@ -68,10 +68,9 @@ def api_init(host=None, token_filename=None, cert_filename=None, context=None):
             config.load_kube_config(kube_config_bak_path, context=context)
         else:
             config.load_kube_config(context=context)
-
+        api_temp = ApiClientTemp()
     CoreV1Api = client.CoreV1Api()
     RbacAuthorizationV1Api = client.RbacAuthorizationV1Api()
-    api_temp = ApiClientTemp()
 
 class BearerTokenLoader(object):
     def __init__(self, host, token_filename, cert_filename=None):
@@ -85,7 +84,7 @@ class BearerTokenLoader(object):
 
     def load_and_set(self):
         self._load_config()
-        self._set_config()
+        return self._set_config()
 
     def _load_config(self):
         self._host = "https://" + self._host
@@ -116,3 +115,4 @@ class BearerTokenLoader(object):
         configuration.verify_ssl = self._verify_ssl
         configuration.api_key['authorization'] = "bearer " + self.token
         client.Configuration.set_default(configuration)
+        return configuration
